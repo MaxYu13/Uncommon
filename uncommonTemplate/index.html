@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Uncommon</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="all,follow">
+  <!-- Bootstrap CSS-->
+  <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+  <!-- Font Awesome CSS-->
+  <link rel="stylesheet" href="vendor/font-awesome/css/font-awesome.min.css">
+  <!-- Google fonts - Roboto + Roboto Slab-->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,700%7CRoboto:400,700,300">
+  <!-- owl carousel-->
+  <link rel="stylesheet" href="vendor/owl.carousel/assets/owl.carousel.css">
+  <link rel="stylesheet" href="vendor/owl.carousel/assets/owl.theme.default.css">
+  <!-- animate.css-->
+  <link rel="stylesheet" href="vendor/animate.css/animate.css">
+  <!-- theme stylesheet-->
+  <link rel="stylesheet" href="css/style.default.css" id="theme-stylesheet">
+  <!-- Custom stylesheet - for your changes-->
+  <link rel="stylesheet" href="css/custom.css">
+  <!-- Leaflet CSS - For the map-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css">
+  <!-- Favicon-->
+  <link rel="shortcut icon" href="img/UncommonIcon.png">
+  <!-- Tweaks for older IEs-->
+  <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
+<script type = 'text/javascript'>
+var SCREEN_WIDTH = window.innerWidth;
+var SCREEN_HEIGHT = window.innerHeight;
+
+var RADIUS = 350;
+
+var RADIUS_SCALE = 1;
+var RADIUS_SCALE_MIN = 1;
+var RADIUS_SCALE_MAX = 1.5;
+
+var QUANTITY = 25;
+
+var canvas;
+var context;
+var particles;
+
+var mouseX = SCREEN_WIDTH * 0.5;
+var mouseY = SCREEN_HEIGHT * 0.4;
+var mouseIsDown = false;
+
+var inferno=new Array('#EEEEEE', '#DCDCDC', '#DCDCDC', '#555555');
+
+function init()
+  {
+  document.getElementById('birdy').style.height='50vh';
+  document.getElementById('rosso').style.visibility='visible';
+ 
+  canvas = document.getElementById( 'world' );
+ 
+  if (canvas && canvas.getContext) {
+        context = canvas.getContext('2d');
+       
+        // Register event listeners
+        window.addEventListener('mousemove', documentMouseMoveHandler, false);
+        window.addEventListener('mousedown', documentMouseDownHandler, false);
+        window.addEventListener('mouseup', documentMouseUpHandler, false);
+        document.addEventListener('touchstart', documentTouchStartHandler, false);
+        document.addEventListener('touchmove', documentTouchMoveHandler, false);
+        window.addEventListener('resize', windowResizeHandler, false);
+       
+        createParticles();
+       
+        windowResizeHandler();
+       
+        setInterval( loop, 1000 / 60 );
+    }
+}
+
+function createParticles() {
+    particles = [];
+   
+    for (var i = 0; i < QUANTITY; i++) {
+        var particle = {
+            size: 1,
+            position: { x: mouseX, y: mouseY },
+            offset: { x: 0, y: 0 },
+            shift: { x: mouseX, y: mouseY },
+            speed: 0.01+Math.random()*0.04,
+            targetSize: 1,
+            fillColor: inferno[Math.floor(Math.random()*inferno.length)],
+            orbit: RADIUS*.5 + (RADIUS * .5 * Math.random())
+        };
+       
+        particles.push( particle );
+    }
+}
+
+function documentMouseMoveHandler(event) {
+    mouseX = event.clientX - (window.innerWidth - SCREEN_WIDTH) * .5;
+    mouseY = event.clientY - (window.innerHeight - SCREEN_HEIGHT) * .5;
+}
+
+function documentMouseDownHandler(event) {
+    mouseIsDown = true;
+}
+
+function documentMouseUpHandler(event) {
+    mouseIsDown = false;
+}
+
+function documentTouchStartHandler(event) {
+    if(event.touches.length == 1) {
+        event.preventDefault();
+
+        mouseX = event.touches[0].pageX - (window.innerWidth - SCREEN_WIDTH) * .5;;
+        mouseY = event.touches[0].pageY - (window.innerHeight - SCREEN_HEIGHT) * .5;
+    }
+}
+
+function documentTouchMoveHandler(event) {
+    if(event.touches.length == 1) {
+        event.preventDefault();
+
+        mouseX = event.touches[0].pageX - (window.innerWidth - SCREEN_WIDTH) * .5;;
+        mouseY = event.touches[0].pageY - (window.innerHeight - SCREEN_HEIGHT) * .5;
+    }
+}
+
+function windowResizeHandler() {
+    SCREEN_WIDTH = window.innerWidth;
+    SCREEN_HEIGHT = window.innerHeight;
+   
+    canvas.width = SCREEN_WIDTH;
+    canvas.height = SCREEN_HEIGHT;
+}
+
+function loop() {
+   
+    if( mouseIsDown ) {
+        RADIUS_SCALE += ( RADIUS_SCALE_MAX - RADIUS_SCALE ) * (0.02);
+    }
+    else {
+        RADIUS_SCALE -= ( RADIUS_SCALE - RADIUS_SCALE_MIN ) * (0.02);
+    }
+   
+    RADIUS_SCALE = Math.min( RADIUS_SCALE, RADIUS_SCALE_MAX );
+   
+    context.fillStyle = 'rgba(240,240,240,0.05)';
+         context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+   
+    for (i = 0, len = particles.length; i < len; i++) {
+        var particle = particles[i];
+       
+        var lp = { x: particle.position.x, y: particle.position.y };
+       
+        // Rotation
+        particle.offset.x += particle.speed;
+        particle.offset.y += particle.speed;
+       
+        // Follow mouse with some lag
+        particle.shift.x += ( mouseX - particle.shift.x) * (particle.speed);
+        particle.shift.y += ( mouseY - particle.shift.y) * (particle.speed);
+       
+        // Apply position
+        particle.position.x = particle.shift.x + Math.cos(i + particle.offset.x) * (particle.orbit*RADIUS_SCALE);
+        particle.position.y = particle.shift.y + Math.sin(i + particle.offset.y) * (particle.orbit*RADIUS_SCALE);
+       
+        // Limit to screen bounds
+        particle.position.x = Math.max( Math.min( particle.position.x, SCREEN_WIDTH ), 0 );
+        particle.position.y = Math.max( Math.min( particle.position.y, SCREEN_HEIGHT ), 0 );
+       
+        particle.size += ( particle.targetSize - particle.size ) * 0.05;
+       
+        if( Math.round( particle.size ) == Math.round( particle.targetSize ) ) {
+            particle.targetSize = 1 + Math.random() * 7;
+        }
+       
+        context.beginPath();
+        context.fillStyle = particle.fillColor;
+        context.strokeStyle = particle.fillColor;
+        context.lineWidth = particle.size;
+        context.moveTo(lp.x, lp.y);
+        context.lineTo(particle.position.x, particle.position.y);
+        context.stroke();
+        context.arc(particle.position.x, particle.position.y, particle.size/2, 0, Math.PI*2, true);
+        context.fill();
+    }
+}
+</script>
+<style>
+  @keyframes fenbeat
+  {
+  0% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  70% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  72% { opacity:1; filter:drop-shadow(0px 0px 5px  rgba(204,0,0,1)); }
+  76% { opacity:1; filter:drop-shadow(0px 0px 5px  rgba(204,0,0,1)); }
+  78% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  86% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  88% { opacity:1; filter:drop-shadow(0px 0px 5px  rgba(204,0,0,1)); }
+  92% { opacity:1; filter:drop-shadow(0px 0px 5px  rgba(204,0,0,1)); }
+  94% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  100% { opacity:0.9; filter:drop-shadow(0px 0px 0px rgba(204,0,0,1)); }
+  }
+  .adink { padding:8px 20px; border-radius:10px; background:rgba(255, 255, 255, .6); }
+  </style>
+</head>
+
+<body onload = "init()">
+  <!-- Reference item-->
+  <!-- navbar-->
+  <header class="header">
+    <nav class="navbar navbar-expand-lg fixed-top">
+      <div class="container"><a href="#intro" class="navbar-brand scrollTo" style='position:absolute;left:0%'><img
+            src='img/UncommonLogo.png'></a>
+        <button type="button" data-toggle="collapse" data-target="#navbarcollapse"
+          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"
+          class="navbar-toggler navbar-toggler-right"><span class="fa fa-bars"></span></button>
+        <div id="navbarcollapse" class="collapse navbar-collapse">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item"><a href="#intro" class="nav-link link-scroll">Intro</a></li>
+            <li class="nav-item"><a href="#about" class="nav-link link-scroll">About</a></li>
+            <li class="nav-item"><a href="#services" class="nav-link link-scroll">Philosophy</a></li>
+            <!-- <li class="nav-item"><a href="#testimonials" class="nav-link link-scroll">Testimonials</a></li> -->
+            <li class="nav-item"><a href="#team" class="nav-link link-scroll">Team</a></li>
+            <li class="nav-item"><a href="#portfolio" class="nav-link link-scroll">Portfolio</a></li>
+            <li class="nav-item"><a href="#contact" class="nav-link link-scroll">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <!-- Intro Image-->
+  <section id="intro" style="background: url(img/City.jpg) center center no-repeat; background-size: cover;"
+    class="intro-section pb-2">
+    <div class="container text-center">
+      <!-- <div data-animate="fadeInDown" class="logo"><img src="img/logo-big.png" alt="logo" width="130"></div> -->
+      <h1 data-animate="fadeInDown" class="text-shadow mb-5">Uncommon</h1>
+      <p data-animate="slideInUp" class="h3 text-shadow text-400">Venture Builder - Impact Investor - Growth Accelerator
+      </p>
+    </div>
+  </section>
+  <!-- About-->
+  <section id="about" class="about-section">
+    <div class="container">
+      <header class="text-center">
+        <h2 data-animate="fadeInDown" class="title">About us</h2>
+      </header>
+      <div class="row">
+        <div data-animate="fadeInUp" class="col-lg-6" style = "font-weight:bold">
+          <p class="lead" style = 'font-weight:bold'>Uncommon is a Joint Venture Organization dedicated to helping you grow your business and
+            helping foster meaningful social impact.</p>
+          <p>Uncommon Venture Partners is positioned as a venture builder and impact investor, focused on accelerating
+            growth (10X) in
+            organizations. We look to invest, acquire or incubate businesses where we can provide unique value in a
+            particular business
+            or organization</p>
+
+          <p>Uncommon Impact Studio our operating entity, is a social enterprise with a mission to accelerate
+            organizational growth. As
+            such, we concentrate on developing innovative opportunities for partners and clients, and leveraging our
+            ecosystem to deliver
+            superior outcomes. We bring together diverse talent and aligned professionals committed to high impact
+            initiatives with a
+            wide range of subject matter interests across real estate, education, technology, financial services and
+            philanthropic
+            industries.</p>
+        </div>
+        <div data-animate="fadeInUp" class="col-lg-6">
+          <img src="img/TargetBusiness.png" alt="Target Business" class="image img-fluid">
+        </div>
+
+      </div>
+    </div>
+  </section>
+  <!-- Service-->
+  <section id="services" class="bg-gradient services-section">
+    <div class="container">
+      <header class="text-center">
+        <h2 data-animate="fadeInDown" class="title">Investment Philosophy</h2>
+      </header>
+      <div class="row services text-left" data-animate="fadeInLeft">
+        <div class='col-2'>
+          <h1>1.</h1>
+        </div>
+        <div class='col-10'>
+          <h4>High Probability Growth Patterns</h4>
+          <p>Uncomon applies the experience of its executives to find high probability growth opportunities that are
+            poised for transformative change over 3-5 years.</p>
+        </div>
+      </div>
+      <div class="row services text-left" data-animate="fadeInLeft">
+        <div class='col-2'>
+          <h1>2.</h1>
+        </div>
+        <div class='col-10'>
+          <h4>Favorable Terms with Liquid Exits</h4>
+          <p>Uncommon negotiates favorable risk/reward terms based on achieving growth phases in accordance with goals
+            of established business owner.</p>
+        </div>
+      </div>
+      <div class="row services text-left" data-animate="fadeInLeft">
+        <div class='col-2'>
+          <h1>3.</h1>
+        </div>
+        <div class='col-10'>
+          <h4>Win-Win Partnerships</h4>
+          <p>Uncommon infuses a leadership team to become an active partner in managing change and unlocking the value
+            hidden within the organization</p>
+        </div>
+      </div>
+      <div class="row services text-left" data-animate="fadeInLeft">
+        <div class='col-2'>
+          <h1>4.</h1>
+        </div>
+        <div class='col-10'>
+          <h4>Asymetric Information</h4>
+          <p>Uncommon gains access to industry expertise, insights and relationships leading to unfair advantage for
+            strategic venture opportunities with disruptive trajectory</p>
+        </div>
+      </div>
+      <hr data-animate="fadeInUp">
+      <div data-animate="fadeInUp" class="text-center">
+        <p class="lead">Would you like to know more or just discuss something?</p>
+        <p><a href="#contact" class="btn btn-outline-light link-scroll">Contact Us</a></p>
+      </div>
+    </div>
+  </section>
+  <!-- Testimonials-->
+  <!-- <section id="testimonials" class="testimonials-section bg-gray">
+      <div class="container">
+        <header class="text-center mb-2">
+          <h2 data-animate="fadeInUp" class="title">My customers said<br><span>about me</span></h2>
+          <p data-animate="fadeInUp" class="lead">I am always glad to hear that my customers leave satisfied. Some of them shared with you their insights on our cooperation.</p>
+        </header>
+        <ul data-animate="fadeInUp" class="owl-carousel owl-theme testimonials equalize-height">
+          <li class="item">
+            <div class="testimonial full-height">
+              <div class="text">
+                <p>One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a horrible vermin. He lay on his armour-like back, and if he lifted his head a little he could see his brown belly, slightly domed and divided by arches into stiff sections.</p>
+              </div>
+              <div class="bottom">
+                <div class="icon"><i class="fa fa-quote-left"></i></div>
+                <div class="name-picture"><img alt="" src="img/person-1.jpg">
+                  <h5>John McIntyre</h5>
+                  <p>CEO, TransTech</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="item">
+            <div class="testimonial full-height">
+              <div class="text">
+                <p>The bedding was hardly able to cover it and seemed ready to slide off any moment. His many legs, pitifully thin compared with the size of the rest of him, waved about helplessly as he looked. &quot;What is happened to me? &quot; he thought. It was not a dream.</p>
+              </div>
+              <div class="bottom">
+                <div class="icon"><i class="fa fa-quote-left"></i></div>
+                <div class="name-picture"><img alt="" src="img/person-2.jpg">
+                  <h5>John McIntyre</h5>
+                  <p>CEO, TransTech</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="item">
+            <div class="testimonial full-height">
+              <div class="text">
+                <p>His room, a proper human room although a little too small, lay peacefully between its four familiar walls. A collection of textile samples lay spread out on the table - Samsa was a travelling salesman - and above it there hung a picture that he had recently cut out of an illustrated magazine and housed in a nice, gilded frame.</p>
+              </div>
+              <div class="bottom">
+                <div class="icon"><i class="fa fa-quote-left"></i></div>
+                <div class="name-picture"><img alt="" src="img/person-3.jpg">
+                  <h5>John McIntyre</h5>
+                  <p>CEO, TransTech</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="item">
+            <div class="testimonial full-height">
+              <div class="text">
+                <p>It showed a lady fitted out with a fur hat and fur boa who sat upright, raising a heavy fur muff that covered the whole of her lower arm towards the viewer. Gregor then turned to look out the window at the dull weather. Drops of rain could be heard hitting the pane, which made him feel quite sad.</p>
+              </div>
+              <div class="bottom">
+                <div class="icon"><i class="fa fa-quote-left"></i></div>
+                <div class="name-picture"><img alt="" src="img/person-4.jpg">
+                  <h5>John McIntyre</h5>
+                  <p>CEO, TransTech</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li class="item">
+            <div class="testimonial full-height">
+              <div class="text">
+                <p>It showed a lady fitted out with a fur hat and fur boa who sat upright, raising a heavy fur muff that covered the whole of her lower arm towards the viewer. Gregor then turned to look out the window at the dull weather. Drops of rain could be heard hitting the pane, which made him feel quite sad. Gregor then turned to look out the window at the dull weather. Drops of rain could be heard hitting the pane, which made him feel quite sad.</p>
+              </div>
+              <div class="bottom">
+                <div class="icon"><i class="fa fa-quote-left"></i></div>
+                <div class="name-picture"><img alt="" src="img/person-4.jpg">
+                  <h5>John McIntyre</h5>
+                  <p>CEO, TransTech</p>
+                </div>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section> -->
+  <!-- Statistics-->
+  <section>
+    <div class='container'>
+      <div class="col-sm-12">
+        <div class="mb-5 text-center" data-animate="slideInLeft">
+          <h2 class="title">Accelemetrics</h2>
+          <h4>Uncommon spends less per win by identifying smarter and more efficient profit opportunities; repositioning
+            under-valued assets to drive growth through an analytical approach called Accelemetrics™.</h4>
+        </div>
+
+        <div class="col-sm-12" data-animate='slideInRight'>
+
+          <img src='img/accelemetrics.png' style='height:100%; width:100%;display:block;margin-left: auto;margin-right: auto;'>
+
+        </div>
+      </div>
+  </section>
+  <!-- <section id="statistics" data-dir="up" style="background: url(&quot;img/parallax.jpg&quot;);" class="statistics-section text-white parallax parallax">
+      <div class="container">
+        <div class="row showcase text-center"> 
+          <div data-animate="fadeInUp" class="col-lg-3 col-md-6">
+            <div class="item">
+              <div class="icon"><i class="fa fa-align-justify"></i></div>
+              <h5 class="text-400 mt-4 text-uppercase"><span class="counter">120</span><br>Websites</h5>
+            </div>
+          </div>
+          <div data-animate="fadeInUp" class="col-lg-3 col-md-6">
+            <div class="item">
+              <div class="icon"><i class="fa fa-users"></i></div>
+              <h5 class="text-400 mt-4 text-uppercase"><span class="counter">75</span><br>Satisfied Clients</h5>
+            </div>
+          </div>
+          <div data-animate="fadeInUp" class="col-lg-3 col-md-6">
+            <div class="item">
+              <div class="icon"><i class="fa fa-copy"></i></div>
+              <h5 class="text-400 mt-4 text-uppercase"><span class="counter">320</span><br>Projects</h5>
+            </div>
+          </div>
+          <div data-animate="fadeInUp" class="col-lg-3 col-md-6">
+            <div class="item">
+              <div class="icon"><i class="fa fa-font"></i></div>
+              <h5 class="text-400 mt-4 text-uppercase"><span class="counter">333</span><br>Magazines and Brochures</h5>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dark-mask"></div>
+    </section> -->
+  <!--
+    *** REFERENCES IMAGE ***
+    _________________________________________________________
+    -->
+  <section class = 'bg-gradient' id = 'team'>
+    <div class='container-fluid'>
+      <div class="col-sm-12"> 
+        <div class="mb-5 text-center">
+          <h2 data-animate="fadeInUp" class="title">Meet the team</h2>
+
+        </div>
+        <div class='row mb-5' data-animate =  'fadeInUp'>
+          <div class='col-4 text-center'><img src='img/GeneDibble.jpeg'
+              style='height:75%;width:75%;display: block;margin-left: auto;margin-right: auto;'><br>
+            <h2>Gene Dibble</h2><a href='https://www.linkedin.com/in/eugene-h-dibble-iv-2373195/'>LinkedIn</a>
+          </div>
+          <div class='col-4 text-center'><img src='img/ChanningJohnson.jpeg'
+              style='height:75%;width:75%;display: block;margin-left: auto;margin-right: auto;'><br>
+            <h2>Channing Johnson</h2><a href='https://www.linkedin.com/in/channing-d-johnson-b4a1b662/'>LinkedIn</a>
+          </div>
+          <div class='col-4 text-center'><img src='img/LouisUpkins.jpeg'
+              style='height:75%;width:75%;display: block;margin-left: auto;margin-right: auto;'><br>
+            <h2>Louis Upkins</h2><a href='https://www.linkedin.com/in/louisupkins/'>LinkedIn</a>
+          </div>
+        </div>
+        <div class='row' data-animate =  'fadeInUp'>
+          <div class='col-4 text-center'><img src='img/KarenShakkour.jpeg'
+              style='height:75%;width:75%;display: block;margin-left: auto;margin-right: auto;'><br>
+            <h2>Karen Shakkour</h2><a href='https://www.linkedin.com/in/karen-dunn-shakkour-5a02935/'>LinkedIn</a>
+          </div>
+          <div class='col-4 text-center'><img src='img/BriaBailey.jpeg'
+              style='height:75%;width:75%;display: block;margin-left: auto;margin-right: auto;'><br>
+            <h2>Bria Bailey</h2><a href='https://www.linkedin.com/in/bria-b-14a0b2197/'>LinkedIn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="portfolio">
+    <div class="container">
+      <div class="col-sm-12">
+        <div class="mb-5 text-center">
+          <h2 data-animate="fadeInUp" class="title">Portfolio</h2>
+          <p data-animate="fadeInUp" class="lead"></p>
+        </div>
+        <!-- <ul id="filter" data-animate="fadeInUp">
+            <li class="active"><a href="#" data-filter="all">All</a></li>
+            <li><a href="#" data-filter="webdesign">Webdesign</a></li>
+            <li><a href="#" data-filter="seo">SEO</a></li>
+            <li><a href="#" data-filter="marketing">Marketing</a></li>
+            <li><a href="#" data-filter="other">Other</a></li>
+          </ul> -->
+        <div id="detail">
+          <div class="row">
+            <div class="col-lg-10 mx-auto"><span class="close">×</span>
+              <div id="detail-slider" class="owl-carousel owl-theme"></div>
+              <div class="text-center">
+                <h1 id="detail-title" class="title"></h1>
+              </div>
+              <div id="detail-content"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Reference detail-->
+        <!-- <div id="references-masonry" data-animate="fadeInUp">
+            <div class="row">
+                  <div data-category="webdesign" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-1.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="seo" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-2.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name 2</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider3.jpg,img/main-slider1.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="marketing" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-3.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name 3</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="marketing" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-4.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name 4</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="webdesign" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-5.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name 5</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="other" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-6.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name 6</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="seo" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-7.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div data-category="webdesign" class="reference-item col-lg-3 col-md-6">
+                    <div class="reference"><a href="#"><img src="img/portfolio-8.jpg" alt="" class="img-fluid">
+                        <div class="overlay">
+                          <div class="inner">
+                            <h3 class="h4 reference-title">Project name</h3>
+                            <p>Short project description goes here...</p>
+                          </div>
+                        </div></a>
+                      <div data-images="img/main-slider1.jpg,img/main-slider2.jpg,img/main-slider3.jpg" class="sr-only reference-description">
+                        <p>Projecting surrounded literature yet delightful alteration but bed men. Open are from long why cold. If must snug by upon sang loud left. As me do preference entreaties compliment motionless ye literature. Day behaviour explained law remainder. Produce can cousins account you pasture. Peculiar delicate an pleasant provided do perceive.</p>
+                        <p>Sitting mistake towards his few country ask. You delighted two rapturous six depending objection happiness something the. Off nay impossible dispatched partiality unaffected. Norland adapted put ham cordial. Ladies talked may shy basket narrow see. Him she distrusts questions sportsmen. Tolerably pretended neglected on my earnestly by. Sex scale sir style truth ought.</p>
+                        <p class="buttons text-center"><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-globe"></i> Visit website</a><a href="javascript:void(0);" class="btn btn-outline-primary"><i class="fa fa-download"></i> Download case study</a></p>
+                      </div>
+                    </div>
+                  </div> -->
+        <!-- </div>
+          </div> -->
+      </div>
+    </div>
+  </section>
+  <!-- Customers-->
+  <!-- <section id="customers" class="customers-section bg-gray">
+      <div class="container">
+        <div class="col-md-12">
+          <div class="row align-items-center">
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-1.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-2.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-3.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-4.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-5.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+              <div class="customer"><img src="img/customers/logo-6.svg" title="brand logo" data-placement="bottom" data-toggle="tooltip" alt="" class="img-fluid d-block mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section> -->
+  <!-- Contact-->
+  <section id="contact" data-animate="bounceIn" class="contact-section contact">
+    <div class="d-flex h-100 align-items-center">
+      <div class="container">
+        <header class="text-center mb-5">
+          <h2 class="text-uppercase lined">Contact</h2>
+        </header>
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <form action="" class="contact-form" id="myForm">
+              <div class="row">
+                <div class="form-group col-lg-6">
+                  <label for="user_name">Name</label>
+                  <input id="user_name" type="text" name="user_name" placeholder="Enter your Name" class="form-control">
+                </div>
+                <div class="form-group col-lg-6">
+                  <label for="user_email">Email</label>
+                  <input id="user_email" type="text" name="user_email" placeholder="Enter your Email"
+                    class="form-control">
+                </div>
+                <div class="form-group col-lg-12">
+                  <label for="subject">Subject</label>
+                  <input id="subject" type="subject" name="subject" placeholder="Subject" class="form-control">
+                </div>
+                <div class="form-group col-lg-12">
+                  <label for="message">Message:</label>
+                  <textarea id="message" name="message" placeholder="Enter your message"
+                    class="form-control"></textarea>
+                </div>
+                <div class="form-group col-lg-12">
+                  <button type="submit" class="btn btn-outline-primary w-100" id="submitMsg">Send message</button>
+                </div>
+              </div>
+            </form>
+          </div>
+  </section>
+  <!-- Map-->
+  <!-- <div id="map"></div>
+    <footer class="main-footer">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6 text-center text-lg-left">
+            <p class="social"><a href="#" class="external facebook wow fadeInUp"><i class="fa fa-facebook"></i></a><a href="#" data-wow-delay="0.2s" class="external instagram wow fadeInUp"><i class="fa fa-instagram"></i></a><a href="#" data-wow-delay="0.4s" class="external gplus wow fadeInUp"><i class="fa fa-google-plus"></i></a><a href="#" data-wow-delay="0.6s" class="email wow fadeInUp"><i class="fa fa-envelope"></i></a></p>
+          </div> -->
+  <!-- /.6-->
+  <div class="col-md-6 text-center text-lg-right mt-4 mt-lg-0">
+    <p>© 2020 Uncommon. All rights reserved.</p>
+  </div>
+  <!-- <div class="col-12 mt-4">
+            <p class="template-bootstrapious">Template by <a href='https://bootstrapious.com/p/bootstrap-carousel'>Bootstrapious</a> & <a href="https://fity.cz/ostrava">Fity</a></p> -->
+  <!-- Please do not remove the backlink to us unless you support further theme's development at https://bootstrapious.com/donate. It is part of the license conditions. Thank you for understanding :)-->
+  <!-- </div> -->
+  </div>
+  </div>
+  </footer>
+  <!-- JavaScript files-->
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="vendor/jquery.cookie/jquery.cookie.js"> </script>
+  <script src="vendor/owl.carousel/owl.carousel.min.js"></script>
+  <script src="vendor/waypoints/lib/jquery.waypoints.min.js"></script>
+  <script src="vendor/jquery.counterup/jquery.counterup.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.js"> </script>
+  <script src="js/front.js"></script>
+  <script src="js/email.js"></script>
+</body>
+
+</html>
